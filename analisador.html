@@ -1,0 +1,1973 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <!-- Desabilitar cache do WebView -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0a0a0a" />
+    <title>15º BPM - Analisador de Ocorrências</title>
+    <base target="_blank" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+      :root {
+        --bg: #f5f5f5;
+        --bg-dark: #0a0a0a;
+        --card: #ffffff;
+        --surface: #fafafa;
+        --surface-hover: #f0f0f0;
+        --primary: #0a0a0a;
+        --secondary: #737373;
+        --accent: #dc2626;
+        --accent-light: #ef4444;
+        --border: #e5e5e5;
+        --border-light: #d4d4d4;
+        --success: #059669;
+        --success-bg: #d1fae5;
+        --danger: #dc2626;
+        --danger-bg: #fee2e2;
+        --warning: #d97706;
+        --text: #171717;
+        --text-light: #525252;
+        --shadow: rgba(0, 0, 0, 0.08);
+        --shadow-lg: rgba(0, 0, 0, 0.12);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      html,
+      body {
+        height: 100%;
+        width: 100%;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        overflow-x: hidden;
+      }
+
+      /* ============================================
+           HEADER - Padrão Relatório de Serviço
+           ============================================ */
+      .app-header {
+        background: var(--bg-dark);
+        border-bottom: 1px solid var(--border);
+        padding: 8px 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 56px;
+        box-shadow: 0 1px 3px var(--shadow);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .app-header h1 {
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: white;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      /* ============================================
+           CONTAINER PRINCIPAL
+           ============================================ */
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+
+      .page-title {
+        text-align: center;
+        margin: 20px 0 8px;
+      }
+      .page-title h1 {
+        color: var(--primary);
+        font-size: 1.4rem;
+        font-weight: 900;
+        letter-spacing: -0.3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      .page-title h1 svg {
+        width: 28px;
+        height: 28px;
+        color: var(--primary);
+      }
+      .subtitle {
+        text-align: center;
+        color: var(--secondary);
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 24px;
+      }
+
+      /* ============================================
+           UPLOAD AREA - Card style
+           ============================================ */
+      .upload-card {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 32px 24px;
+        border: 2px dashed var(--border-light);
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        margin-bottom: 16px;
+        box-shadow:
+          0 4px 12px var(--shadow),
+          0 1px 3px rgba(30, 58, 95, 0.06);
+      }
+      .upload-card:hover,
+      .upload-card.dragover {
+        border-color: var(--accent);
+        background: var(--surface-hover);
+        box-shadow: 0 6px 16px rgba(220, 38, 38, 0.15);
+      }
+      .upload-card .upload-icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 12px;
+        color: var(--accent);
+      }
+      .upload-card p {
+        color: var(--secondary);
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+      .upload-card .file-name {
+        color: var(--accent);
+        font-weight: 700;
+        margin-top: 8px;
+        font-size: 0.85rem;
+        display: none;
+      }
+      input[type="file"] {
+        display: none;
+      }
+
+      /* ============================================
+           BOTÃO ANALISAR - Padrão Relatório
+           ============================================ */
+      .btn-analyze {
+        width: 100%;
+        padding: 16px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 800;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        letter-spacing: 1px;
+        box-shadow: 0 4px 12px rgba(30, 58, 95, 0.2);
+        margin-bottom: 20px;
+      }
+      .btn-analyze:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(30, 58, 95, 0.3);
+      }
+      .btn-analyze:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+      }
+      .btn-analyze:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+      .btn-analyze .spinner-btn {
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      .btn-analyze svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      /* ============================================
+           LOADER
+           ============================================ */
+      .loader {
+        display: none;
+        text-align: center;
+        margin: 30px 0;
+      }
+      .loader .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid var(--border);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px;
+      }
+      .loader p {
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ============================================
+           REPORT - Cards style
+           ============================================ */
+      .report {
+        display: none;
+      }
+      .report h2 {
+        color: var(--primary);
+        font-size: 1.1rem;
+        font-weight: 800;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .report h2 svg {
+        width: 22px;
+        height: 22px;
+        color: var(--accent);
+      }
+
+      /* ============================================
+           CARDS DE SEÇÃO
+           ============================================ */
+      .section-card {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border-left: 4px solid var(--accent);
+        box-shadow:
+          0 4px 12px rgba(30, 58, 95, 0.1),
+          0 1px 3px rgba(30, 58, 95, 0.06);
+      }
+      .section-card.danger {
+        border-left-color: var(--danger);
+      }
+      .section-card.success {
+        border-left-color: var(--success);
+      }
+      .section-card.warning {
+        border-left-color: var(--warning);
+      }
+
+      .section-header {
+        font-weight: 700;
+        color: var(--primary);
+        font-size: 0.8rem;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .section-header svg {
+        width: 18px;
+        height: 18px;
+        color: var(--accent);
+        flex-shrink: 0;
+      }
+      .section-header .badge {
+        margin-left: auto;
+      }
+
+      /* ============================================
+           BADGES
+           ============================================ */
+      .badge {
+        background: var(--accent);
+        color: white;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 800;
+      }
+      .badge-pct {
+        background: var(--surface-hover);
+        color: var(--accent);
+        padding: 1px 8px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-left: 6px;
+      }
+
+      /* ============================================
+           SUMMARY BOX
+           ============================================ */
+      .summary-box {
+        background: var(--surface);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid var(--border);
+      }
+      .summary-box p {
+        color: var(--text);
+        line-height: 1.6;
+        font-size: 0.9rem;
+      }
+      .summary-box strong {
+        color: var(--primary);
+        font-weight: 700;
+      }
+
+      /* ============================================
+           TABELAS
+           ============================================ */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        background: var(--card);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      th,
+      td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        background: var(--surface-hover);
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      td {
+        color: var(--text);
+        font-size: 0.9rem;
+      }
+      tr:hover td {
+        background: var(--surface-hover);
+      }
+
+      /* ============================================
+           CONDUCT ITEMS
+           ============================================ */
+      .conduct-item {
+        background: var(--surface);
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 10px;
+        border-left: 4px solid var(--danger);
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(30, 58, 95, 0.06);
+      }
+      .conduct-item:hover {
+        background: var(--surface-hover);
+        transform: translateX(3px);
+        box-shadow: 0 4px 12px rgba(30, 58, 95, 0.1);
+      }
+      .conduct-item .codigo {
+        color: var(--danger);
+        font-family: "Courier New", monospace;
+        font-size: 0.8rem;
+        font-weight: 700;
+        background: var(--danger-bg);
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+      .conduct-item .cidade {
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+      .conduct-item .natureza {
+        color: var(--text);
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-top: 4px;
+      }
+      .conduct-item .local {
+        color: var(--secondary);
+        font-size: 0.85rem;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .conduct-item .local svg {
+        width: 14px;
+        height: 14px;
+        color: var(--secondary);
+        flex-shrink: 0;
+      }
+      .conduct-item .meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .conduct-item .meta svg {
+        width: 14px;
+        height: 14px;
+        color: var(--secondary);
+        flex-shrink: 0;
+      }
+
+      /* ============================================
+           STATUS BADGES
+           ============================================ */
+      .status-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .status-solucionada {
+        background: var(--success-bg);
+        color: var(--success);
+      }
+      .status-rondas {
+        background: #fef3c7;
+        color: var(--warning);
+      }
+      .status-delegacia {
+        background: var(--danger-bg);
+        color: var(--danger);
+      }
+      .status-encaminhado {
+        background: #e0e7ff;
+        color: #4338ca;
+      }
+      .status-comunicacao {
+        background: var(--surface-hover);
+        color: var(--secondary);
+      }
+      .status-terceiros {
+        background: #fee2e2;
+        color: var(--accent);
+      }
+
+      /* ============================================
+           CHART / BARS
+           ============================================ */
+      .chart-container {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .bar-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        border: 1px solid var(--border);
+        flex: 1;
+        min-width: 200px;
+      }
+      .bar {
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #0a0a0a 0%, #262626 100%);
+        min-width: 20px;
+        transition: width 0.5s ease;
+      }
+      .bar-label {
+        color: var(--text);
+        white-space: nowrap;
+        font-weight: 600;
+        font-size: 0.8rem;
+      }
+      .bar-value {
+        color: var(--primary);
+        font-weight: 800;
+        min-width: 20px;
+        text-align: right;
+        font-size: 0.85rem;
+      }
+
+      /* ============================================
+           STATS GRID
+           ============================================ */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .stat-card {
+        background: var(--surface);
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+        border: 1px solid var(--border);
+        transition: all 0.2s ease;
+      }
+      .stat-card:hover {
+        background: var(--surface-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 58, 95, 0.08);
+      }
+      .stat-card .stat-number {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--primary);
+      }
+      .stat-card .stat-label {
+        color: var(--secondary);
+        font-size: 0.75rem;
+        margin-top: 4px;
+        font-weight: 600;
+      }
+
+      /* ============================================
+           PERÍODO INFO
+           ============================================ */
+      .periodo-info {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--secondary);
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: var(--surface);
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+      }
+      .periodo-info svg {
+        width: 16px;
+        height: 16px;
+        color: var(--accent);
+        flex-shrink: 0;
+      }
+      .periodo-wrapper {
+        text-align: center;
+        margin-bottom: 16px;
+      }
+
+      /* ============================================
+           ERROR MSG
+           ============================================ */
+      .error-msg {
+        background: var(--danger-bg);
+        border: 1px solid rgba(220, 38, 38, 0.2);
+        color: var(--danger);
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin-bottom: 16px;
+        display: none;
+        font-weight: 600;
+        font-size: 0.85rem;
+        align-items: center;
+        gap: 8px;
+      }
+      .error-msg.active {
+        display: flex;
+      }
+      .error-msg svg {
+        width: 18px;
+        height: 18px;
+        color: var(--danger);
+        flex-shrink: 0;
+      }
+
+      /* ============================================
+           FAB SHARE
+           ============================================ */
+      .fab-share {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+        transition: all 0.3s ease;
+        z-index: 1000;
+      }
+      .fab-share:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+      }
+      .fab-share:active {
+        transform: scale(0.95);
+      }
+      .fab-share svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      /* ============================================
+           TOAST
+           ============================================ */
+      .toast {
+        position: fixed;
+        bottom: 90px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--bg-dark);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        z-index: 1001;
+        opacity: 0;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .toast svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+
+      /* ============================================
+           RESPONSIVE
+           ============================================ */
+      @media (max-width: 480px) {
+        .container {
+          padding: 12px;
+        }
+        .page-title h1 {
+          font-size: 1.2rem;
+        }
+        .bar-item {
+          min-width: 100%;
+        }
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .btn-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        transition: all 0.2s;
+      }
+      .btn-icon svg {
+        width: 20px;
+        height: 20px;
+      }
+      .btn-icon:active {
+        transform: scale(0.95);
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* ============================================
+           TABS SEGMENTADAS NO HEADER
+           ============================================ */
+      .header-tabs {
+        display: flex;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 3px;
+        gap: 3px;
+        margin: 0 auto;
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+      .tab-item {
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #a3a3a3;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .tab-item.active {
+        background: #dc2626;
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(220,38,38,0.4);
+      }
+      .tab-item:not(.active):hover {
+        color: #d4d4d4;
+        background: rgba(255,255,255,0.05);
+      }
+      .tab-item:active {
+        transform: scale(0.95);
+      }
+
+      /* ============================================
+           TRANSIÇÃO DE PÁGINA - SLIDE + FADE
+           ============================================ */
+      .page-transition-out {
+        animation: slideOutRight 0.25s ease forwards;
+      }
+      .page-transition-in {
+        animation: slideInLeft 0.25s ease forwards;
+      }
+      @keyframes slideOutRight {
+        from {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(30px);
+        }
+      }
+      @keyframes slideInLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* Remover botões de aumentar/diminuir do input number */
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+    
+      /* ============================================
+         PROTEÇÃO DEFINITIVA DOS BOTÕES DO HEADER
+         ============================================ */
+      .header-actions .btn-icon {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+      }
+
+      /* ============================================
+         MODAIS COMPARTILHADOS (Senha/Logout)
+         ============================================ */
+      .modal {
+        display: none; position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+        z-index: 2000; justify-content: center; align-items: center;
+        padding: 20px;
+      }
+      .modal.active { display: flex; }
+      .modal-content {
+        background: var(--card); border-radius: 12px;
+        padding: 24px; width: 100%; max-width: 360px;
+        border: 1px solid var(--border);
+        box-shadow: 0 25px 50px var(--shadow-lg);
+      }
+      .modal-title {
+        font-size: 1.1rem; font-weight: 700;
+        margin-bottom: 16px; color: var(--primary);
+        display: flex; align-items: center; gap: 8px;
+      }
+      .modal-actions {
+        display: flex; gap: 10px; margin-top: 20px;
+      }
+      .btn-modal {
+        flex: 1; padding: 12px; border: none;
+        border-radius: 6px; font-weight: 700;
+        cursor: pointer; transition: all 0.2s;
+      }
+      .btn-modal.primary { background: #0a0a0a; color: white; }
+      .btn-modal.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+
+      .input-group {
+        margin-bottom: 16px;
+      }
+      .input-group label {
+        display: block; font-size: 0.8rem; font-weight: 700;
+        color: var(--text); margin-bottom: 6px;
+      }
+      .input-group input {
+        width: 100%; padding: 14px 16px;
+        border: 2px solid var(--border);
+        border-radius: 10px; font-size: 1rem;
+        background: var(--surface); color: var(--text);
+      }
+      .input-wrapper {
+        position: relative; display: flex; align-items: center;
+      }
+      .input-wrapper input {
+        padding-right: 44px;
+      }
+      .btn-toggle-password {
+        position: absolute; right: 12px; top: 50%;
+        transform: translateY(-50%);
+        background: none; border: none; cursor: pointer;
+        padding: 4px; color: var(--secondary);
+      }
+
+      /* Logout Modal */
+      .logout-modal {
+        display: none;
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(30, 58, 95, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 5000;
+        justify-content: center; align-items: center;
+        padding: 20px; opacity: 0;
+        transition: opacity 0.25s ease;
+      }
+      .logout-modal.active {
+        display: flex; opacity: 1;
+      }
+      .logout-modal-content {
+        background: var(--card);
+        border-radius: 16px;
+        padding: 28px 24px 24px;
+        width: 100%; max-width: 320px;
+        text-align: center;
+        border: 1px solid var(--border);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        transform: scale(0.92) translateY(10px);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .logout-modal.active .logout-modal-content {
+        transform: scale(1) translateY(0);
+      }
+      .logout-icon {
+        width: 56px; height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 16px;
+      }
+      .logout-icon svg {
+        width: 28px; height: 28px;
+        color: var(--danger);
+      }
+      .logout-title {
+        font-size: 1.1rem; font-weight: 800;
+        color: var(--text); margin-bottom: 6px;
+      }
+      .logout-subtitle {
+        font-size: 0.85rem;
+        color: var(--secondary); margin-bottom: 24px;
+      }
+      .logout-actions {
+        display: flex; gap: 10px;
+      }
+      .logout-actions button {
+        flex: 1; padding: 12px 16px;
+        border: none; border-radius: 10px;
+        font-size: 0.85rem; font-weight: 700;
+        cursor: pointer; transition: all 0.2s ease;
+      }
+      .btn-logout-cancel {
+        background: var(--surface);
+        color: var(--text);
+        border: 1.5px solid var(--border) !important;
+      }
+      .btn-logout-confirm {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+      }
+
+</style>
+    <base target="_blank" />
+  <base target="_blank">
+<script src="crypto-storage-combined.js"></script>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Relatório 15º BPM">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+</head>
+  <body>
+    <script>
+        // Forçar reload se voltar do cache (bfcache)
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload(true);
+            }
+        });
+    </script>
+    <!-- Forçar reload completo do WebView ao navegar -->
+    <script>
+    console.log('🔍 [LOG ANALISADOR] Script carregado');
+    console.log('🔍 [LOG ANALISADOR] URL:', window.location.href);
+
+    // LOG: Verificar CSS das tabs ao carregar
+    document.addEventListener('DOMContentLoaded', function() {
+        var tabs = document.querySelectorAll('.tab-item');
+        console.log('🔍 [LOG ANALISADOR] Tabs encontradas:', tabs.length);
+        tabs.forEach(function(tab, i) {
+            var computed = getComputedStyle(tab);
+            console.log('🔍 [LOG ANALISADOR] Tab', i, '- color:', computed.color, 'background:', computed.backgroundColor);
+        });
+    });
+        (function() {
+            // Detectar se estamos voltando via cache do WebView (bfcache)
+            if (window.performance && window.performance.navigation) {
+                if (window.performance.navigation.type === 2) {
+                    // Tipo 2 = back/forward navigation - forçar reload
+                    window.location.reload(true);
+                }
+            }
+            // Também verificar via Page Visibility API
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    // Página carregada do bfcache - forçar reload
+                    window.location.reload(true);
+                }
+            });
+        })();
+    </script>
+    <!-- HEADER -->
+    <header
+      class="app-header"
+      style="position: relative; justify-content: center"
+    >
+      <!-- Botões à esquerda -->
+      <div class="header-actions" style="position:absolute; left:15px; top:50%; transform:translateY(-50%); z-index:10;">
+        <button class="btn-icon" onclick="mostrarModalSenha()" title="Alterar Senha" style="display:flex !important; visibility:visible !important; opacity:1 !important;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><circle cx="14.5" cy="9.5" r="3.5"/><path d="M12,11 L4,19 L4,21 L7,21 L7,19 L9,19 L9,17 L11,17 L11,15"/><circle cx="16" cy="8" r="1" fill="currentColor"/><path d="M3,5 a2,2 0 0,1 4,0 M7,5 L7,7 L3,7 L3,5" stroke-width="1.2"/></svg>
+        </button>
+        <button class="btn-icon" onclick="logout()" title="Sair" style="display:flex !important; visibility:visible !important; opacity:1 !important;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+
+      <!-- Tabs no centro -->
+      <div
+        class="header-actions"
+        style="position: absolute; left: 50%; transform: translateX(-50%)"
+      >
+        <div class="header-tabs">
+          <div
+            class="tab-item"
+            data-tab="editor"
+            onclick="navigateTo('relatorio')"
+          >
+            RELATÓRIO INICIAL
+          </div>
+          <div class="tab-item active" data-tab="analisador">
+            RELATÓRIO FINAL
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="page-title">
+        <h1>
+          <!-- Ícone documento/relatório -->
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+            />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+          Analisador de Ocorrências
+        </h1>
+      </div>
+      <p class="subtitle">
+        Faça upload do relatório PDF e obtenha análise inteligente
+        automaticamente
+      </p>
+
+      <div class="error-msg" id="errorMsg">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span id="errorMsgText"></span>
+      </div>
+
+      <div class="upload-card" id="uploadArea">
+        <!-- Ícone upload/nuvem -->
+        <svg
+          class="upload-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+        <p>Arraste o PDF aqui ou clique para selecionar</p>
+        <p class="file-name" id="fileName"></p>
+      </div>
+
+      <input type="file" id="fileInput" accept=".pdf" />
+
+      <button class="btn-analyze" id="btnAnalyze" disabled>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <span id="btnAnalyzeText">Analisar Relatório</span>
+      </button>
+
+      <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p>Analisando ocorrências... Aguarde</p>
+      </div>
+
+      <div class="report" id="report"></div>
+    </div>
+
+    <button class="fab-share" id="fabShare" title="Compartilhar no WhatsApp">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="18" cy="5" r="3" />
+        <circle cx="6" cy="12" r="3" />
+        <circle cx="18" cy="19" r="3" />
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+      </svg>
+    </button>
+
+    <div class="toast" id="toast">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+      <span id="toastText">Copiado para a área de transferência!</span>
+    </div>
+
+    <script>
+      // ==========================================
+      // NAVEGAÇÃO ENTRE PÁGINAS COM TRANSIÇÃO
+      // ==========================================
+            function navigateTo(page) {
+        console.log('🔍 [LOG ANALISADOR] navigateTo chamada para:', page);
+
+        // Criar overlay de transição
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:9999;opacity:0;transition:opacity 0.3s ease;pointer-events:none;';
+        document.body.appendChild(overlay);
+
+        // Forçar reflow
+        overlay.offsetHeight;
+
+        // Animar overlay
+        overlay.style.opacity = '1';
+
+        setTimeout(function () {
+          var cacheBuster = '&_cb=' + Date.now();
+          if (page === "analisador") {
+            window.location.href =
+              "analisador.html?from=relatorio&session=active" + cacheBuster;
+          } else {
+            window.location.href = "relatorio.html?skipLogin=true" + cacheBuster;
+          }
+        }, 300);
+      }
+
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+      const uploadArea = document.getElementById("uploadArea");
+      const fileInput = document.getElementById("fileInput");
+      const fileName = document.getElementById("fileName");
+      const btnAnalyze = document.getElementById("btnAnalyze");
+      const btnAnalyzeText = document.getElementById("btnAnalyzeText");
+      const loader = document.getElementById("loader");
+      const report = document.getElementById("report");
+      const errorMsg = document.getElementById("errorMsg");
+      const errorMsgText = document.getElementById("errorMsgText");
+      let currentFile = null;
+      let lastAnalysisData = null;
+
+      uploadArea.addEventListener("click", () => fileInput.click());
+      uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.classList.add("dragover");
+      });
+      uploadArea.addEventListener("dragleave", () =>
+        uploadArea.classList.remove("dragover"),
+      );
+      uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
+        const files = e.dataTransfer.files;
+        if (files.length && files[0].name.endsWith(".pdf")) setFile(files[0]);
+        else showError("Por favor, envie apenas arquivos PDF.");
+      });
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length) setFile(e.target.files[0]);
+      });
+
+      function setFile(file) {
+        currentFile = file;
+        fileName.textContent = file.name;
+        fileName.style.display = "block";
+        btnAnalyze.disabled = false;
+        errorMsg.classList.remove("active");
+      }
+
+      function showError(msg) {
+        errorMsgText.textContent = msg;
+        errorMsg.classList.add("active");
+      }
+
+      function clearReport() {
+        report.innerHTML = "";
+        report.style.display = "none";
+      }
+
+      function setLoading(loading) {
+        if (loading) {
+          btnAnalyze.disabled = true;
+          btnAnalyzeText.innerHTML =
+            '<span class="spinner-btn"></span> Analisando...';
+        } else {
+          btnAnalyze.disabled = false;
+          btnAnalyzeText.innerHTML = `Analisar Relatório`;
+        }
+      }
+
+      btnAnalyze.addEventListener("click", async () => {
+        if (!currentFile) return;
+        clearReport();
+        setLoading(true);
+        loader.style.display = "block";
+        report.style.display = "none";
+        errorMsg.classList.remove("active");
+
+        try {
+          const arrayBuffer = await currentFile.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+          let fullText = "";
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            fullText +=
+              textContent.items.map((item) => item.str).join(" ") + "\n";
+          }
+
+          const analysis = analyzeOccurrences(fullText);
+          renderReport(analysis);
+        } catch (err) {
+          console.error(err);
+          showError("Erro ao processar PDF: " + err.message);
+        } finally {
+          loader.style.display = "none";
+          setLoading(false);
+        }
+      });
+
+      function analyzeOccurrences(text) {
+        const periodoMatch = text.match(
+          /Per[i\u00ed]odo[:\s]*(\d{2}\/\d{2}\/\d{4})[^\n]*?(\d{2}\/\d{2}\/\d{4})/i,
+        );
+        let periodo = "N\u00e3o identificado";
+        if (periodoMatch) {
+          periodo = periodoMatch[1] + " a " + periodoMatch[2];
+        }
+
+        const totalMatch = text.match(/\(Total\s*:\s*(\d+)\)/i);
+        const total = totalMatch ? parseInt(totalMatch[1]) : 0;
+
+        const cidadesValidas = [
+          "S\u00e3o Sebasti\u00e3o de Lagoa de Ro\u00e7a",
+          "Algod\u00e3o de Janda\u00edra",
+          "Lagoa de Ro\u00e7a",
+          "Esperan\u00e7a",
+          "Rem\u00edgio",
+          "Areial",
+          "Puxinan\u00e3",
+          "Montadas",
+          "Pocinhos",
+          "Matinhas",
+          "Alagoa Nova",
+          "Areia",
+        ];
+
+        const statusList = [
+          "Solucionada no local",
+          "Rondas realizadas",
+          "Procedimento em delegacia",
+          "Encaminhado a outros \u00f3rg\u00e3os",
+          "Comunica\u00e7\u00e3o inver\u00eddica",
+          "Solucionada por terceiros",
+        ];
+
+        const naturezasMap = {
+          "Perturba\u00e7\u00e3o do trabalho ou sossego alheios": [
+            "Som veicular",
+            "Som residencial",
+            "Som de estabelecimento",
+            "Outras emiss\u00f5es sonoras",
+          ],
+          "Viol\u00eancia Dom\u00e9stica": [
+            "Viol\u00eancia dom\u00e9stica contra o homem",
+            "contra o homem",
+            "contra a mulher",
+          ],
+          "Vias de Fato": [],
+          "Les\u00e3o Corporal": ["Les\u00e3o Corporal por Agress\u00e3o"],
+          "Amea\u00e7a": ["contra o homem", "contra a mulher"],
+          "Embriaguez ao volante": [],
+          "Averigua\u00e7\u00e3o de Atitude Suspeita": ["a ve\u00edculo"],
+          "Desaparecimento de Pessoa": [],
+          "Porte Ilegal de Arma de Fogo": ["Porte de Arma de Fogo"],
+          "Apoio a Outros \u00d3rg\u00e3os": [
+            "Poder Judici\u00e1rio",
+            "Pol\u00edcia Civil",
+            "Conselho Tutelar",
+          ],
+          "Recupera\u00e7\u00e3o de Ve\u00edculo": [],
+        };
+
+        const pmRegex = /\bPM(\d{10})\b/g;
+        const pmMatches = [];
+        let match;
+        while ((match = pmRegex.exec(text)) !== null) {
+          pmMatches.push({
+            codigo: "PM" + match[1],
+            index: match.index,
+          });
+        }
+
+        const ocorrencias = [];
+        let currentNatureza = "";
+        let currentDetalhe = "";
+
+        for (let i = 0; i < pmMatches.length; i++) {
+          const pm = pmMatches[i];
+          const startIndex = pm.index;
+          const endIndex =
+            i + 1 < pmMatches.length ? pmMatches[i + 1].index : text.length;
+          const bloco = text.substring(startIndex, endIndex);
+
+          for (const [natBase, detalhes] of Object.entries(naturezasMap)) {
+            if (bloco.toLowerCase().includes(natBase.toLowerCase())) {
+              currentNatureza = natBase;
+              currentDetalhe = "";
+              for (const det of detalhes) {
+                if (bloco.toLowerCase().includes(det.toLowerCase())) {
+                  currentDetalhe = det;
+                  break;
+                }
+              }
+              break;
+            }
+          }
+
+          let cidade = null;
+          for (const cidadeVar of cidadesValidas) {
+            const escaped = cidadeVar.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const pattern = new RegExp(escaped, "gi");
+            let cidadeMatch;
+            while ((cidadeMatch = pattern.exec(bloco)) !== null) {
+              const contextAround = bloco.substring(
+                Math.max(0, cidadeMatch.index - 30),
+                cidadeMatch.index + cidadeVar.length + 30,
+              );
+              if (
+                contextAround.includes(" - Centro") ||
+                contextAround.includes(" - Zona rural") ||
+                contextAround.includes(" - Zona Rural")
+              ) {
+                cidade = cidadeVar;
+                break;
+              }
+              if (!/\bPB\b|\bBrasil\b/i.test(contextAround)) {
+                cidade = cidadeVar;
+                break;
+              }
+            }
+            if (cidade) break;
+          }
+
+          if (!cidade) {
+            for (const cidadeVar of cidadesValidas) {
+              const escaped = cidadeVar.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              if (new RegExp(escaped, "i").test(bloco)) {
+                cidade = cidadeVar;
+                break;
+              }
+            }
+          }
+
+          let status = "N\u00e3o identificado";
+          for (const s of statusList) {
+            if (bloco.toLowerCase().includes(s.toLowerCase())) {
+              status = s;
+              break;
+            }
+          }
+          if (status === "N\u00e3o identificado") {
+            const blocoLower = bloco.toLowerCase();
+            if (
+              blocoLower.includes("procedimento") ||
+              blocoLower.includes("delegacia")
+            ) {
+              status = "Procedimento em delegacia";
+            }
+          }
+
+          let natureza = currentNatureza;
+          let naturezaDetalhe = currentDetalhe;
+
+          if (!natureza) {
+            const blocoAnterior = text.substring(
+              Math.max(0, startIndex - 2000),
+              startIndex,
+            );
+            for (const [natBase, detalhes] of Object.entries(naturezasMap)) {
+              if (blocoAnterior.toLowerCase().includes(natBase.toLowerCase())) {
+                natureza = natBase;
+                for (const det of detalhes) {
+                  if (blocoAnterior.toLowerCase().includes(det.toLowerCase())) {
+                    naturezaDetalhe = det;
+                    break;
+                  }
+                }
+                break;
+              }
+            }
+          }
+
+          let naturezaCompleta = natureza;
+          if (naturezaDetalhe) naturezaCompleta += " - " + naturezaDetalhe;
+          if (!naturezaCompleta)
+            naturezaCompleta = "Natureza n\u00e3o identificada";
+
+          let local = "";
+          const localPatterns = [
+            /(Rua\s+[A-Z][^,]+(?:,\s*\d+)?[^,]*)/i,
+            /(Avenida\s+[A-Z][^,]+(?:,\s*\d+)?[^,]*)/i,
+            /(S[i\u00ed]tio\s+[A-Z][^,]+)/i,
+            /(Pra\u00e7a\s+[A-Z][^,]+)/i,
+            /(Balne\u00e1rio\s+[A-Z][^,]+)/i,
+          ];
+          for (const pattern of localPatterns) {
+            const match = bloco.match(pattern);
+            if (match) {
+              local = match[1].trim();
+              break;
+            }
+          }
+
+          let data = "";
+          const dataMatch = bloco.match(
+            /(\d{2}\/\d{2}\/\d{4})\s*(\d{2}:\d{2}:\d{2})/,
+          );
+          if (dataMatch) data = dataMatch[1] + " " + dataMatch[2];
+
+          local = local
+            .replace(/,\s*PB\b/gi, "")
+            .replace(/,\s*Brasil\b/gi, "")
+            .replace(/\bBrasil\b/gi, "")
+            .replace(/,\s*$/g, "")
+            .trim()
+            .replace(/\s+/g, " ");
+
+          ocorrencias.push({
+            codigo: pm.codigo,
+            cidade: cidade || "N\u00e3o identificado",
+            status,
+            natureza: naturezaCompleta,
+            local: local || "Local n\u00e3o identificado",
+            data,
+          });
+        }
+
+        const porCidade = {};
+        cidadesValidas.forEach((c) => (porCidade[c] = 0));
+        ocorrencias.forEach((o) => {
+          if (cidadesValidas.includes(o.cidade)) {
+            porCidade[o.cidade]++;
+          }
+        });
+        const cidadesOrdenadas = Object.entries(porCidade)
+          .filter(([_, qtd]) => qtd > 0)
+          .sort((a, b) => b[1] - a[1])
+          .map(([cidade, qtd]) => ({ cidade, qtd }));
+
+        const conducoes = ocorrencias.filter(
+          (o) => o.status === "Procedimento em delegacia",
+        );
+        const outras = ocorrencias.filter(
+          (o) => o.status !== "Procedimento em delegacia",
+        );
+        const outrasPorStatus = {};
+        outras.forEach((o) => {
+          outrasPorStatus[o.status] = (outrasPorStatus[o.status] || 0) + 1;
+        });
+
+        return {
+          periodo,
+          total,
+          cidadesOrdenadas,
+          conducoes,
+          outras,
+          outrasPorStatus,
+          ocorrencias,
+        };
+      }
+
+      function renderReport(data) {
+        lastAnalysisData = data;
+
+        const statusClass = (status) => {
+          const s = (status || "").toLowerCase();
+          if (s.includes("solucionada no local")) return "status-solucionada";
+          if (s.includes("rondas")) return "status-rondas";
+          if (s.includes("delegacia")) return "status-delegacia";
+          if (s.includes("encaminhado")) return "status-encaminhado";
+          if (s.includes("comunica\u00e7\u00e3o")) return "status-comunicacao";
+          if (s.includes("terceiros")) return "status-terceiros";
+          return "status-solucionada";
+        };
+        const statusLabel = (status) => {
+          const s = (status || "").toLowerCase();
+          if (s.includes("solucionada no local")) return "Solucionada";
+          if (s.includes("rondas")) return "Rondas";
+          if (s.includes("delegacia")) return "Delegacia";
+          if (s.includes("encaminhado")) return "Encaminhado";
+          if (s.includes("comunica\u00e7\u00e3o")) return "Inver\u00eddica";
+          if (s.includes("terceiros")) return "Terceiros";
+          return status;
+        };
+
+        const maxQtd = Math.max(...data.cidadesOrdenadas.map((c) => c.qtd), 1);
+
+        // Ícones SVG inline para uso no template
+        const iconChart = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>`;
+        const iconMapPin = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
+        const iconAlert = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+        const iconCheck = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+        const iconCalendar = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+        const iconClock = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+
+        let html = `
+                <h2>${iconChart} Relat\u00f3rio Analisado</h2>
+                <div class="periodo-wrapper">
+                    <span class="periodo-info">${iconCalendar} Per\u00edodo analisado: ${data.periodo}</span>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        ${iconChart} Resumo Geral
+                    </div>
+                    <div class="summary-box">
+                        <p><strong>Total de ocorr\u00eancias:</strong> ${data.total} registros processados</p>
+                        <p><strong>Ocorr\u00eancias extra\u00eddas:</strong> ${data.ocorrencias.length} ocorr\u00eancias</p>
+                        <p><strong>Condu\u00e7\u00f5es \u00e0 delegacia:</strong> ${data.conducoes.length} ocorr\u00eancias</p>
+                        <p><strong>Outras resolu\u00e7\u00f5es:</strong> ${data.outras.length} ocorr\u00eancias</p>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        ${iconMapPin} Quantidade de ocorr\u00eancias por cidade <span class="badge">${data.ocorrencias.length}</span>
+                    </div>
+                    <div class="chart-container">
+                        ${data.cidadesOrdenadas
+                          .map(
+                            (c) => `
+                            <div class="bar-item">
+                                <span class="bar-label">${c.cidade}</span>
+                                <div class="bar" style="width: ${(c.qtd / maxQtd) * 120}px"></div>
+                                <span class="bar-value">${c.qtd}</span>
+                                <span class="badge-pct">${data.ocorrencias.length > 0 ? ((c.qtd / data.ocorrencias.length) * 100).toFixed(1) : "0.0"}%</span>
+                            </div>
+                        `,
+                          )
+                          .join("")}
+                    </div>
+                </div>
+
+                <div class="section-card danger">
+                    <div class="section-header">
+                        ${iconAlert} Condu\u00e7\u00f5es \u00e0 delegacia <span class="badge">${data.conducoes.length}</span>
+                    </div>
+                    ${data.conducoes.length === 0 ? '<p style="color:var(--secondary); font-size:0.9rem; padding:8px 0;">Nenhuma condu\u00e7\u00e3o identificada no per\u00edodo.</p>' : ""}
+                    ${data.conducoes
+                      .map(
+                        (c, i) => `
+                        <div class="conduct-item">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+                                <span class="cidade">${i + 1}. ${c.cidade}</span>
+                                <span class="codigo">${c.codigo}</span>
+                            </div>
+                            <div class="natureza">${c.natureza}</div>
+                            <div class="local">
+                                ${iconMapPin} ${c.local}
+                            </div>
+                            <div class="meta">
+                                <span class="status-badge ${statusClass(c.status)}">${statusLabel(c.status)}</span>
+                                ${c.data ? `<span style="color:var(--secondary); font-size:0.8rem; display:flex; align-items:center; gap:4px">${iconClock} ${c.data}</span>` : ""}
+                            </div>
+                        </div>
+                    `,
+                      )
+                      .join("")}
+                </div>
+
+                <div class="section-card success">
+                    <div class="section-header">
+                        ${iconCheck} Outras ocorr\u00eancias <span class="badge">${data.outras.length}</span>
+                    </div>
+                    <p style="color:var(--secondary); margin-bottom:12px; font-size:0.85rem; font-weight:500">Ocorr\u00eancias solucionadas no local, com rondas realizadas, encaminhadas a outros \u00f3rg\u00e3os, etc.</p>
+                    <div class="stats-grid">
+                        ${Object.entries(data.outrasPorStatus)
+                          .map(
+                            ([status, qtd]) => `
+                            <div class="stat-card">
+                                <div class="stat-number">${qtd}</div>
+                                <div class="stat-label"><span class="status-badge ${statusClass(status)}">${statusLabel(status)}</span></div>
+                            </div>
+                        `,
+                          )
+                          .join("")}
+                    </div>
+                </div>
+            `;
+        report.innerHTML = html;
+        report.style.display = "block";
+        report.scrollIntoView({ behavior: "smooth" });
+      }
+
+      function generateWhatsAppText(data) {
+        const divider =
+          "\u2796\u2796\u2796\u2796\u2796\u2796\u2796\u2796\u2796\u2796";
+
+        let text = "*POL\u00cdCIA MILITAR DA PARA\u00cdBA*\n";
+        text += "*15\u00ba BATALH\u00c3O DE POL\u00cdCIA MILITAR*\n";
+        text += "*RELAT\u00d3RIO DE T\u00c9RMINO DE SERVI\u00c7O - CPU*\n\n";
+
+        text += "\ud83d\uddd3\ufe0f Per\u00edodo: " + data.periodo + "\n";
+        text += divider + "\n\n";
+
+        text += "\ud83d\udcca *RESUMO GERAL*\n";
+        text += "\u25aa\ufe0f Total de ocorr\u00eancias: " + data.total + "\n";
+        text +=
+          "\u25aa\ufe0f Condu\u00e7\u00f5es \u00e0 delegacia: " +
+          data.conducoes.length +
+          "\n";
+        text +=
+          "\u25aa\ufe0f Outras resolu\u00e7\u00f5es: " +
+          data.outras.length +
+          "\n";
+        text += divider + "\n\n";
+
+        text += "\ud83d\udccd *OCORR\u00caNCIAS POR CIDADE*\n";
+        data.cidadesOrdenadas.forEach((c) => {
+          const pct =
+            data.ocorrencias.length > 0
+              ? ((c.qtd / data.ocorrencias.length) * 100).toFixed(1)
+              : "0.0";
+          let cidadeNome = c.cidade;
+          if (cidadeNome === "S\u00e3o Sebasti\u00e3o de Lagoa de Ro\u00e7a") {
+            cidadeNome = "S\u00e3o Sebasti\u00e3o de L. de Ro\u00e7a";
+          }
+          text +=
+            "\u25aa\ufe0f *" + cidadeNome + ":* " + c.qtd + " (" + pct + "%)\n";
+        });
+        text += divider + "\n\n";
+
+        if (data.conducoes.length > 0) {
+          text +=
+            "\ud83d\ude94 *CONDU\u00c7\u00d5ES \u00c0 DELEGACIA (" +
+            data.conducoes.length +
+            ")*\n";
+          data.conducoes.forEach((c, i) => {
+            text +=
+              "*" + (i + 1) + ". " + c.cidade + "* - ```" + c.codigo + "```\n";
+            text += "_" + c.natureza + "_\n";
+            text += "\ud83d\udccd " + c.local + "\n";
+            if (c.data) {
+              const dataParts = c.data.split(" ");
+              if (dataParts.length >= 2) {
+                const horaParts = dataParts[1].split(":");
+                const horaFormatada = horaParts[0] + ":" + horaParts[1];
+                text +=
+                  "\u23f0 " + dataParts[0] + " \u00e0s " + horaFormatada + "\n";
+              } else {
+                text += "\u23f0 " + c.data + "\n";
+              }
+            }
+            text += "\n";
+          });
+          text += divider + "\n\n";
+        }
+
+        if (Object.keys(data.outrasPorStatus).length > 0) {
+          text += "\u2705 *OUTRAS RESOLU\u00c7\u00d5ES*\n";
+          Object.entries(data.outrasPorStatus).forEach(([status, qtd]) => {
+            text += "\u25aa\ufe0f " + status + ": " + qtd + "\n";
+          });
+          text += "\n";
+        }
+
+        text += "*Bom servi\u00e7o ao CPU que entra!* \ud83d\udcaa";
+
+        return text;
+      }
+
+      document.getElementById("fabShare").addEventListener("click", () => {
+        if (!lastAnalysisData) {
+          showToast("Analise um relat\u00f3rio primeiro!");
+          return;
+        }
+
+        const text = generateWhatsAppText(lastAnalysisData);
+        const encodedText = encodeURIComponent(text);
+
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          window.location.href = "whatsapp://send?text=" + encodedText;
+          setTimeout(() => {
+            window.open("https://wa.me/?text=" + encodedText, "_blank");
+          }, 1000);
+        } else {
+          window.open("https://wa.me/?text=" + encodedText, "_blank");
+        }
+      });
+
+      function showToast(message) {
+        const toast = document.getElementById("toast");
+        const toastText = document.getElementById("toastText");
+        toastText.textContent = message;
+        toast.classList.add("show");
+        setTimeout(() => {
+          toast.classList.remove("show");
+        }, 3000);
+      }
+    </script>
+  
+
+<!-- Modal Alterar Senha -->
+<div class="modal" id="modalSenha">
+    <div class="modal-content">
+        <div class="modal-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><circle cx="14.5" cy="9.5" r="3.5"/><path d="M12,11 L4,19 L4,21 L7,21 L7,19 L9,19 L9,17 L11,17 L11,15"/><circle cx="16" cy="8" r="1" fill="currentColor"/><path d="M3,5 a2,2 0 0,1 4,0 M7,5 L7,7 L3,7 L3,5" stroke-width="1.2"/></svg>
+            Alterar Senha
+        </div>
+        <div class="input-group">
+            <label>Senha Atual</label>
+            <div class="input-wrapper">
+                <input type="password" id="senhaAtual" placeholder="Senha atual">
+                <button type="button" class="btn-toggle-password" onclick="toggleModalPassword('senhaAtual', this)" title="Mostrar senha">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2,12 C5,6 8.5,4 12,4 C15.5,4 19,6 22,12 C19,18 15.5,20 12,20 C8.5,20 5,18 2,12 Z"/><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Nova Senha</label>
+            <div class="input-wrapper">
+                <input type="password" id="novaSenha" placeholder="Nova senha">
+                <button type="button" class="btn-toggle-password" onclick="toggleModalPassword('novaSenha', this)" title="Mostrar senha">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2,12 C5,6 8.5,4 12,4 C15.5,4 19,6 22,12 C19,18 15.5,20 12,20 C8.5,20 5,18 2,12 Z"/><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Confirmar</label>
+            <div class="input-wrapper">
+                <input type="password" id="confirmarSenha" placeholder="Confirmar nova senha">
+                <button type="button" class="btn-toggle-password" onclick="toggleModalPassword('confirmarSenha', this)" title="Mostrar senha">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2,12 C5,6 8.5,4 12,4 C15.5,4 19,6 22,12 C19,18 15.5,20 12,20 C8.5,20 5,18 2,12 Z"/><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-modal secondary" onclick="fecharModalSenha()">Cancelar</button>
+            <button class="btn-modal primary" onclick="alterarSenha()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Logout -->
+<div class="logout-modal" id="logoutModal">
+    <div class="logout-modal-content">
+        <div class="logout-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </div>
+        <div class="logout-title">Sair do Sistema</div>
+        <div class="logout-subtitle">Deseja encerrar sua sessão no Relatório de Serviço?</div>
+        <div class="logout-actions">
+            <button class="btn-logout-cancel" onclick="fecharLogoutModal()">Cancelar</button>
+            <button class="btn-logout-confirm" onclick="confirmarLogout()">Sair</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==========================================
+// FUNÇÕES COMPARTILHADAS (também no analisador)
+// ==========================================
+let usuarioAtual = null;
+let isPasswordVisible = false;
+
+// AppStorage compatível
+const AppStorage = {
+    getItem: function(key) {
+        try { return localStorage.getItem(key); } catch(e) { return null; }
+    },
+    setItem: function(key, value) {
+        try { localStorage.setItem(key, value); } catch(e) {}
+    },
+    removeItem: function(key) {
+        try { localStorage.removeItem(key); } catch(e) {}
+    }
+};
+
+// Recuperar usuário da sessão
+const sessaoAtual = AppStorage.getItem('sessao15bpm');
+if (sessaoAtual) {
+    try {
+        const dados = JSON.parse(sessaoAtual);
+        if (dados.matricula) usuarioAtual = dados.matricula;
+    } catch(e) {}
+}
+
+let usuarios = {
+    '5296994': { nome: 'TEN BARBOSA', senha: '1234' },
+    '5288134': { nome: 'TEN KATIUSKA', senha: '1234' },
+    '5234573': { nome: 'CAP RICRATE', senha: '1234' },
+    '5234476': { nome: 'TEN MARLON', senha: '1234' },
+    '5227232': { nome: 'TEN JOALISSON', senha: '1234' },
+    '5288096': { nome: 'TEN AUGUSTO', senha: '1234' },
+    '5294657': { nome: 'TEN DENIZAR', senha: '1234' },
+    '5231612': { nome: 'CAP SÉRGIO', senha: '1234' },
+    '5286018': { nome: 'CAP GABRIEL', senha: '1234' }
+};
+
+const usuariosSalvos = AppStorage.getItem('usuarios15bpm');
+if (usuariosSalvos) usuarios = JSON.parse(usuariosSalvos);
+
+// Toggle de visibilidade de senha
+function toggleModalPassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const isVisible = input.type === 'text';
+    if (isVisible) {
+        input.type = 'password';
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2,12 C5,6 8.5,4 12,4 C15.5,4 19,6 22,12 C19,18 15.5,20 12,20 C8.5,20 5,18 2,12 Z"/><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>';
+        btn.title = 'Mostrar senha';
+    } else {
+        input.type = 'text';
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+        btn.title = 'Ocultar senha';
+    }
+}
+
+// Modal Senha
+function mostrarModalSenha() {
+    document.getElementById('modalSenha').classList.add('active');
+    document.getElementById('senhaAtual').value = '';
+    document.getElementById('novaSenha').value = '';
+    document.getElementById('confirmarSenha').value = '';
+}
+
+function fecharModalSenha() {
+    document.getElementById('modalSenha').classList.remove('active');
+}
+
+function alterarSenha() {
+    const senhaAtual = document.getElementById('senhaAtual').value;
+    const novaSenha = document.getElementById('novaSenha').value;
+    const confirmarSenha = document.getElementById('confirmarSenha').value;
+
+    if (!senhaAtual || !novaSenha || !confirmarSenha) {
+        showToast('Preencha todos os campos!'); return;
+    }
+    if (!usuarios[usuarioAtual] || usuarios[usuarioAtual].senha !== senhaAtual) {
+        showToast('Senha atual incorreta!'); return;
+    }
+    if (novaSenha !== confirmarSenha) {
+        showToast('As senhas não coincidem!'); return;
+    }
+    if (novaSenha.length < 4) {
+        showToast('Mínimo 4 caracteres!'); return;
+    }
+
+    usuarios[usuarioAtual].senha = novaSenha;
+    AppStorage.setItem('usuarios15bpm', JSON.stringify(usuarios));
+    AppStorage.setItem('ultimaSenha15bpm', novaSenha);
+    fecharModalSenha();
+    showToast('Senha alterada com sucesso!');
+}
+
+// Logout
+function logout() {
+    mostrarLogoutModal();
+}
+
+function mostrarLogoutModal() {
+    document.getElementById('logoutModal').classList.add('active');
+}
+
+function fecharLogoutModal() {
+    document.getElementById('logoutModal').classList.remove('active');
+}
+
+function confirmarLogout() {
+    fecharLogoutModal();
+    AppStorage.removeItem('sessao15bpm');
+    usuarioAtual = null;
+    window.location.href = 'relatorio.html';
+}
+
+// Toast
+function showToast(mensagem) {
+    const toast = document.getElementById('toast');
+    toast.textContent = mensagem;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Fechar modais ao clicar fora - aguardar DOM estar pronto
+document.addEventListener('DOMContentLoaded', function() {
+    const modalSenha = document.getElementById('modalSenha');
+    if (modalSenha) {
+        modalSenha.addEventListener('click', function(e) {
+            if (e.target === this) fecharModalSenha();
+        });
+    }
+    const logoutModal = document.getElementById('logoutModal');
+    if (logoutModal) {
+        logoutModal.addEventListener('click', function(e) {
+            if (e.target === this) fecharLogoutModal();
+        });
+    }
+});
+</script>
+
+
+<script>
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+        try {
+            await navigator.serviceWorker.register('sw.js', { scope: '/' });
+        } catch (error) {
+            console.error('SW registration failed:', error);
+        }
+    });
+}
+</script>
+</body>
+</html>
