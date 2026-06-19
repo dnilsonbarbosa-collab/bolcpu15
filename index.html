@@ -1407,15 +1407,91 @@
 
         .loading-overlay {
             display: none; position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; background: #f0f4f8;
+            width: 100%; height: 100%; background: #0a0a0a;
             z-index: 3000; justify-content: center; align-items: center;
             flex-direction: column;
         }
         .loading-overlay.active { display: flex; }
-        .spinner {
+        .loading-overlay .loading-brand {
+            width: 80px; height: 80px;
+            object-fit: contain;
+            margin-bottom: 24px;
+            filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.4));
+            animation: loadingPulse 2s ease-in-out infinite;
+        }
+        .loading-overlay .loading-brand-fallback {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 24px;
+            animation: loadingPulse 2s ease-in-out infinite;
+            box-shadow: 0 0 30px rgba(220, 38, 38, 0.5);
+        }
+        .loading-overlay .loading-brand-fallback svg {
             width: 40px; height: 40px;
-            border: 3px solid var(--border); border-top-color: white;
-            border-radius: 50%; animation: spin 1s linear infinite;
+            color: white;
+        }
+        .loading-overlay .loading-text {
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .loading-overlay .loading-subtext {
+            color: #737373;
+            font-weight: 500;
+            font-size: 0.75rem;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+        .loading-spinner-ring {
+            width: 120px; height: 120px;
+            position: relative;
+            margin-bottom: 24px;
+        }
+        .loading-spinner-ring::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #dc2626;
+            border-right-color: #dc2626;
+            animation: spin 1s linear infinite;
+        }
+        .loading-spinner-ring::after {
+            content: '';
+            position: absolute;
+            top: 8px; left: 8px; right: 8px; bottom: 8px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-bottom-color: #404040;
+            border-left-color: #404040;
+            animation: spin 1.5s linear infinite reverse;
+        }
+        .loading-spinner-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px; height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .loading-spinner-center img {
+            width: 100%; height: 100%;
+            object-fit: contain;
+            filter: brightness(0) invert(1);
+        }
+        .loading-spinner-center .fallback-icon {
+            width: 32px; height: 32px;
+            color: #dc2626;
+        }
+        @keyframes loadingPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.85; }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -2931,11 +3007,13 @@
 
         <!-- Loading -->
         <div class="loading-overlay" id="loading">
-            <div style="position:relative;width:130px;height:130px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-                <div style="width:130px;height:130px;border:4px solid #e2e8f0;border-top-color:#0a0a0a;border-radius:50%;animation:spin 1s linear infinite;position:absolute;top:0;left:0;box-sizing:border-box;"></div>
-                <img src="img/relatorio-15bpm-icon-transparent.png" alt="Brasão 15º BPM" style="width:100px;height:100px;object-fit:contain;display:block;position:relative;z-index:1;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\'font-size:3rem;\'>📋</div>';">
+            <div class="loading-spinner-ring">
+                <div class="loading-spinner-center">
+                    <img src="relatorio-15bpm-icon-transparent.png" alt="Brasao 15 BPM" onerror="this.style.display='none'; this.parentElement.innerHTML='<svg class='fallback-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1='16' y1='13' x2='8' y2='13'/><line x1='16' y1='17' x2='8' y2='17'/><polyline points='10 9 9 9 8 9'/></svg>';">
+                </div>
             </div>
-            <p style="color:#0a0a0a;font-weight:700;font-size:0.95rem;">Gerando relatório...</p>
+            <p class="loading-text">Gerando relatorio</p>
+            <p class="loading-subtext">Aguarde um momento</p>
         </div>
 
         <!-- Toast -->
