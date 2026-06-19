@@ -6,19 +6,19 @@
 const CACHE_NAME = 'relatorio-15bpm-v1';
 const STATIC_ASSETS = [
   '/',
-  '/index.html',
-  '/manifest.json',
+  'index.html',
+  'manifest.json',
   // Ícones
-  '/icons/icon-72x72.png',
-  '/icons/icon-96x96.png',
-  '/icons/icon-128x128.png',
-  '/icons/icon-144x144.png',
-  '/icons/icon-152x152.png',
-  '/icons/icon-192x192.png',
-  '/icons/icon-384x384.png',
-  '/icons/icon-512x512.png',
+  'icons/icon-72x72.png',
+  'icons/icon-96x96.png',
+  'icons/icon-128x128.png',
+  'icons/icon-144x144.png',
+  'icons/icon-152x152.png',
+  'icons/icon-192x192.png',
+  'icons/icon-384x384.png',
+  'icons/icon-512x512.png',
   // Imagens do app
-  '/img/relatorio-15bpm-icon-transparent.png',
+  'img/relatorio-15bpm-icon-transparent.png',
   // Bibliotecas externas (fallback)
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
@@ -99,13 +99,13 @@ self.addEventListener('fetch', (event) => {
 
 function isStaticAsset(url) {
   const staticPaths = [
-    '/index.html',
-    '/manifest.json',
-    '/icons/',
-    '/img/',
-    '/screenshots/',
-    '/css/',
-    '/js/'
+    'index.html',
+    'manifest.json',
+    'icons/',
+    'img/',
+    'screenshots/',
+    'css/',
+    'js/'
   ];
   return staticPaths.some(path => url.pathname.startsWith(path)) || url.pathname === '/';
 }
@@ -131,7 +131,7 @@ async function cacheFirst(request) {
     console.error('[SW] Falha ao buscar recurso:', request.url);
     // Retornar página offline se disponível
     if (request.mode === 'navigate') {
-      return cache.match('/index.html');
+      return cache.match('index.html');
     }
     throw error;
   }
@@ -188,8 +188,8 @@ self.addEventListener('push', (event) => {
   const data = event.data.json();
   const options = {
     body: data.body || 'Novo relatório disponível',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
+    icon: 'icons/icon-192x192.png',
+    badge: 'icons/icon-72x72.png',
     tag: data.tag || 'relatorio-15bpm',
     requireInteraction: false
   };
