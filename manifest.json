@@ -2,7 +2,7 @@
   "name": "Relatório de Serviço - 15º BPM",
   "short_name": "Relatório 15º BPM",
   "description": "Sistema de Relatórios de Serviço da Polícia Militar da Paraíba - 15º BPM",
-  "start_url": "/relatorio.html",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

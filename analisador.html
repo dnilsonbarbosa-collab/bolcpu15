@@ -1176,7 +1176,7 @@
             window.location.href =
               "analisador.html?from=relatorio&session=active" + cacheBuster;
           } else {
-            window.location.href = "relatorio.html?skipLogin=true" + cacheBuster;
+            window.location.href = "index.html?skipLogin=true" + cacheBuster;
           }
         }, 300);
       }
@@ -1928,7 +1928,7 @@ function confirmarLogout() {
     fecharLogoutModal();
     AppStorage.removeItem('sessao15bpm');
     usuarioAtual = null;
-    window.location.href = 'relatorio.html';
+    window.location.href = 'index.html';
 }
 
 // Toast

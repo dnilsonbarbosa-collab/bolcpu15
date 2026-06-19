@@ -6,7 +6,7 @@
 const CACHE_NAME = 'relatorio-15bpm-v1';
 const STATIC_ASSETS = [
   '/',
-  '/relatorio.html',
+  '/index.html',
   '/manifest.json',
   // Ícones
   '/icons/icon-72x72.png',
@@ -99,7 +99,7 @@ self.addEventListener('fetch', (event) => {
 
 function isStaticAsset(url) {
   const staticPaths = [
-    '/relatorio.html',
+    '/index.html',
     '/manifest.json',
     '/icons/',
     '/img/',
