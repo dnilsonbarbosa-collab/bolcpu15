@@ -4135,9 +4135,7 @@
                             if (navigator.canShare({ files: [file] })) {
                                 console.log('Compartilhando via Web Share API (arquivo)');
                                 await navigator.share({
-                                    files: [file],
-                                    title: 'Relatório 15º BPM',
-                                    text: 'Relatório de Serviço - 15º BPM'
+                                files: [file]
                                 });
                                 showToast('Compartilhado com sucesso!');
                                 loading.classList.remove('active');
@@ -4156,8 +4154,6 @@
                         try {
                             console.log('Compartilhando via Web Share API (texto)');
                             await navigator.share({
-                                title: 'Relatório 15º BPM',
-                                text: preview.innerText.substring(0, 500) + '...',
                                 url: window.location.href
                             });
                             showToast('Compartilhado com sucesso!');
