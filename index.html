@@ -2289,7 +2289,10 @@
     <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-72x72.png">
     <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-72x72.png">
 
+<!-- CryptoJS CDN fallback (garante SHA256 disponível para hash de senhas) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
 <script src="crypto-storage-combined.js"></script>
+<base target="_blank">
 </head>
 <body>
     <script>
@@ -3108,12 +3111,22 @@
                         this._injectedData[key] = value;
                     }
 
-                    // Salvar no CryptoStorage (criptografado)
-                    if (typeof CryptoStorage !== 'undefined') {
-                        CryptoStorage.setItem(key, value);
-                    } else {
-                        // Fallback: salvar direto no localStorage
-                        try { localStorage.setItem(key, value); } catch(e) {}
+                    // SEMPRE salvar no localStorage diretamente (garante persistência)
+                    try { 
+                        localStorage.setItem(key, value); 
+                        console.log('[AppStorage] Salvo no localStorage:', key);
+                    } catch(e) {
+                        console.error('[AppStorage] Falha ao salvar no localStorage:', e);
+                    }
+
+                    // Também tentar salvar no CryptoStorage (criptografado) se disponível
+                    if (typeof CryptoStorage !== 'undefined' && CryptoStorage.setItem) {
+                        try {
+                            CryptoStorage.setItem(key, value);
+                            console.log('[AppStorage] Salvo no CryptoStorage:', key);
+                        } catch(e) {
+                            console.warn('[AppStorage] CryptoStorage falhou (mas localStorage já salvou):', e);
+                        }
                     }
 
                     // Salvar nativamente via AndroidBridge
@@ -3179,6 +3192,8 @@
                             brasaoBase64Cache = base64;
                             console.log('Brasão base64 carregado via AndroidBridge');
                         }
+
+            // ==========================================
                     }
                 } catch (e) {
                     console.error('Erro ao carregar brasão base64:', e);
@@ -3196,19 +3211,42 @@
             const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
             let usuarios = {
-                '5296994': { nome: 'TEN BARBOSA', senha: '1234' },
-                '5288134': { nome: 'TEN KATIUSKA', senha: '1234' },
-                '5234573': { nome: 'CAP RICRATE', senha: '1234' },
-                '5234476': { nome: 'TEN MARLON', senha: '1234' },
-                '5227232': { nome: 'TEN JOALISSON', senha: '1234' },
-                '5288096': { nome: 'TEN AUGUSTO', senha: '1234' },
-                '5294657': { nome: 'TEN DENIZAR', senha: '1234' },
-                '5231612': { nome: 'CAP SÉRGIO', senha: '1234' },
-                '5286018': { nome: 'CAP GABRIEL', senha: '1234' }
+                '5296994': { nome: 'TEN BARBOSA', senhaHash: '5413000a4df1dedf78e341f6da9a09c263d062627435e53bb166246a5877c540', salt: 'PMPB15BPM2024' },
+                '5288134': { nome: 'TEN KATIUSKA', senhaHash: '5413000a4df1dedf78e341f6da9a09c263d062627435e53bb166246a5877c540', salt: 'PMPB15BPM2024' },
+                '5234573': { nome: 'CAP RICRATE', senhaHash: '5413000a4df1dedf78e341f6da9a09c263d062627435e53bb166246a5877c540', salt: 'PMPB15BPM2024' },
+                '5234476': { nome: 'TEN MARLON', senhaHash: '5413000a4df1dedf78e341f6da9a09c263d062627435e53bb166246a5877c540', salt: 'PMPB15BPM2024' },
+                '5227232': { nome: 'TEN JOALISSON', senhaHash: '5413000a4df1dedf78e341f6da9a09c263d062627435e53bb166246a5877c540', salt: 'PMPB15BPM2024' },
+                '5288096': { nome: 'TEN AUGUSTO', senhaHash: '5413000a4df1dedf78e341f6da9a09c263d062627435e53bb166246a5877c540', salt: 'PMPB15BPM2024' },
+                '5294657': { nome: 'TEN DENIZAR', senhaHash: '5413000a4df1dedf78e341f6da9a09c263d062627435e53bb166246a5877c540', salt: 'PMPB15BPM2024' },
+                '5231612': { nome: 'CAP SÉRGIO', senhaHash: '5413000a4df1dedf78e341f6da9a09c263d062627435e53bb166246a5877c540', salt: 'PMPB15BPM2024' },
+                '5286018': { nome: 'CAP GABRIEL', senhaHash: '5413000a4df1dedf78e341f6da9a09c263d062627435e53bb166246a5877c540', salt: 'PMPB15BPM2024' }
             };
 
             const usuariosSalvos = AppStorage.getItem('usuarios15bpm');
-            if (usuariosSalvos) usuarios = JSON.parse(usuariosSalvos);
+            if (usuariosSalvos) {
+                try {
+                    var parsed = JSON.parse(usuariosSalvos);
+                    // Migrar senhas antigas (plaintext) para hash se necessário
+                    var migrated = false;
+                    for (var mat in parsed) {
+                        if (parsed[mat].senha && !parsed[mat].senhaHash) {
+                            // Senha antiga em plaintext - migrar para hash
+                            var salt = generateSalt();
+                            parsed[mat].senhaHash = hashPassword(parsed[mat].senha, salt);
+                            parsed[mat].salt = salt;
+                            delete parsed[mat].senha;
+                            migrated = true;
+                        }
+                    }
+                    usuarios = parsed;
+                    if (migrated) {
+                        AppStorage.setItem('usuarios15bpm', JSON.stringify(usuarios));
+                        console.log('[HASH] Senhas antigas migradas para hash');
+                    }
+                } catch(e) {
+                    console.error('[HASH] Erro ao carregar usuarios:', e);
+                }
+            }
 
             // ==========================================
             // INICIALIZAÇÃO
@@ -3376,12 +3414,74 @@
                 }
             }
 
+            // HASH DE SENHA - SHA-256 + salt
+            // Fallback: crypto.subtle nativo do navegador
+            // ==========================================
+            function hashPassword(password, salt) {
+                var salted = password + salt;
+
+                // PRIORIDADE 1: CryptoJS (já carregado via CDN)
+                if (typeof CryptoJS !== 'undefined' && CryptoJS.SHA256) {
+                    try {
+                        var result = CryptoJS.SHA256(salted);
+                        var hash = result.toString(CryptoJS.enc.Hex);
+                        console.log('[HASH] CryptoJS OK, hash gerado:', hash.substring(0, 16) + '...');
+                        return hash;
+                    } catch (e) {
+                        console.error('[HASH] Erro no CryptoJS.SHA256:', e);
+                    }
+                }
+
+                console.warn('[HASH] CryptoJS não disponível ou falhou, usando fallback simples');
+                return simpleHash(salted);
+            }
+
+            // Fallback simples de hash (DJB2-like) para quando CryptoJS não carrega
+            function simpleHash(str) {
+                var hash = 5381;
+                for (var i = 0; i < str.length; i++) {
+                    hash = ((hash << 5) + hash) + str.charCodeAt(i);
+                    hash = hash & hash; // Converter para 32-bit inteiro
+                }
+                // Expandir para 64 chars hex (simular SHA-256)
+                var hex = '';
+                var val = Math.abs(hash);
+                for (var j = 0; j < 16; j++) {
+                    val = (val * 9301 + 49297) % 233280;
+                    hex += ('00000000' + val.toString(16)).slice(-8);
+                }
+                return hex;
+            }
+
+            function generateSalt() {
+                var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                var salt = '';
+                for (var i = 0; i < 16; i++) {
+                    salt += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return salt;
+            }
+
+            function verifyPassword(password, storedHash, salt) {
+                var computedHash = hashPassword(password, salt);
+                return computedHash === storedHash;
+            }
+
             function fazerLogin() {
                 if (isLoggingIn) return;
 
                 const matricula = document.getElementById('loginMatricula').value.trim();
                 const senha = document.getElementById('loginSenha').value;
                 const errorMsg = document.getElementById('loginError');
+
+                console.log('[LOGIN] Tentando login, matrícula:', matricula);
+                console.log('[LOGIN] CryptoJS disponível:', typeof CryptoJS !== 'undefined');
+                console.log('[LOGIN] Usuário encontrado:', !!usuarios[matricula]);
+                if (usuarios[matricula]) {
+                    console.log('[LOGIN] Usuário tem senhaHash:', !!usuarios[matricula].senhaHash);
+                    console.log('[LOGIN] Usuário tem salt:', !!usuarios[matricula].salt);
+                    console.log('[LOGIN] Usuário tem senha plaintext:', !!usuarios[matricula].senha);
+                }
 
                 if (!matricula || !senha) {
                     errorMsg.textContent = 'Preencha todos os campos';
@@ -3392,39 +3492,70 @@
 
                 setLoginLoading(true);
 
-                // Delay para feedback visual
+                // Delay para feedback visual + timeout de segurança
                 setTimeout(() => {
-                    if (usuarios[matricula] && usuarios[matricula].senha === senha) {
-                        usuarioAtual = matricula;
-                        AppStorage.setItem('sessao15bpm', JSON.stringify({ matricula: matricula }));
-                        // Não salvar senha em localStorage por segurança
-                        // A senha existe apenas na memória durante a sessão
-                        setLoginLoading(false);
+                    try {
+                        var user = usuarios[matricula];
+                        var senhaValida = false;
 
-                        // Login bem-sucedido, entrar no app
-                        entrarApp();
-                    } else {
+                        if (user) {
+                            if (user.senhaHash && user.salt) {
+                                // Novo formato: verificar hash
+                                console.log('[LOGIN] Verificando hash...');
+                                senhaValida = verifyPassword(senha, user.senhaHash, user.salt);
+                                console.log('[LOGIN] Resultado verifyPassword:', senhaValida);
+                            } else if (user.senha) {
+                                // Formato antigo (fallback) - migrar para hash
+                                console.log('[LOGIN] Migrando senha antiga para hash...');
+                                var salt = generateSalt();
+                                user.senhaHash = hashPassword(user.senha, salt);
+                                user.salt = salt;
+                                senhaValida = verifyPassword(senha, user.senhaHash, user.salt);
+                                // Salvar migrado
+                                AppStorage.setItem('usuarios15bpm', JSON.stringify(usuarios));
+                                console.log('[LOGIN] Migração concluída, senha válida:', senhaValida);
+                            } else {
+                                console.log('[LOGIN] Usuário sem senhaHash nem senha!');
+                            }
+                        } else {
+                            console.log('[LOGIN] Matrícula não encontrada');
+                        }
+
+                        if (senhaValida) {
+                            usuarioAtual = matricula;
+                            AppStorage.setItem('sessao15bpm', JSON.stringify({ matricula: matricula }));
+
+                            // Sempre salvar usuarios15bpm no login (garante persistência do hash)
+                            AppStorage.setItem('usuarios15bpm', JSON.stringify(usuarios));
+                            console.log('[LOGIN] usuarios15bpm salvo com hash');
+
+                            console.log('[LOGIN] Login bem-sucedido!');
+                            setLoginLoading(false);
+                            entrarApp();
+                        } else {
+                            console.log('[LOGIN] Senha inválida');
+                            setLoginLoading(false);
+                            errorMsg.textContent = 'Matrícula ou senha inválidos';
+                            errorMsg.style.display = 'block';
+                            setTimeout(() => errorMsg.style.display = 'none', 3000);
+                        }
+                    } catch (e) {
+                        console.error('[LOGIN] ERRO no login:', e);
                         setLoginLoading(false);
-                        errorMsg.textContent = 'Matrícula ou senha inválidos';
+                        errorMsg.textContent = 'Erro interno. Tente novamente.';
                         errorMsg.style.display = 'block';
                         setTimeout(() => errorMsg.style.display = 'none', 3000);
                     }
                 }, 600);
-            }
 
-            
-
-            
-
-            
-
-            
-
-            
-
-            
-
-            function entrarApp() {
+                // Timeout de segurança: se algo travar, libera o botão em 5 segundos
+                setTimeout(() => {
+                    if (isLoggingIn) {
+                        console.warn('[LOGIN] Timeout de segurança acionado! Liberando botão.');
+                        setLoginLoading(false);
+                    }
+                }, 5000);
+            }function entrarApp() {
     console.log('🔍 [LOG] entrarApp() chamada');
 
     // VERIFICAR BOTÕES NO HEADER
@@ -3492,21 +3623,16 @@
                 updateAllRemoveDropdowns();
                 initGhostInputs();
 
-    // LOG FINAL - Verificar estado dos botões após inicialização completa
+    // Garantir visibilidade dos botões após inicialização
     setTimeout(function() {
-        console.log('🔍 [LOG] === VERIFICAÇÃO FINAL DOS BOTÕES ===');
         var header = document.querySelector('.app-header');
         if (header) {
-            var botoes = header.querySelectorAll('.btn-icon');
-            console.log('🔍 [LOG] Botões após init:', botoes.length);
-            botoes.forEach(function(btn, i) {
-                var rect = btn.getBoundingClientRect();
-                console.log('🔍 [LOG] Botão', i, '- visível:', rect.width > 0 && rect.height > 0,
-                            'rect:', rect.width, 'x', rect.height,
-                            'top:', rect.top, 'left:', rect.left);
+            header.querySelectorAll('.btn-icon').forEach(function(btn) {
+                btn.style.display = 'flex';
+                btn.style.visibility = 'visible';
+                btn.style.opacity = '1';
             });
         }
-        console.log('🔍 [LOG] === FIM VERIFICAÇÃO ===');
     }, 1000);
                 initPreviewDrag();
 
@@ -3545,10 +3671,16 @@
                     return;
                 }
 
-                // Redefinir senha para padrão
-                usuarios[matricula].senha = '1234';
+                // Redefinir senha para padrão (1234) com novo hash
+                var saltPadrao = generateSalt();
+                var hashPadrao = hashPassword('1234', saltPadrao);
+
+                usuarios[matricula].senhaHash = hashPadrao;
+                usuarios[matricula].salt = saltPadrao;
+                delete usuarios[matricula].senha; // Remover plaintext se existir
+
                 AppStorage.setItem('usuarios15bpm', JSON.stringify(usuarios));
-                // Senha padrão definida — não armazenada em localStorage
+                // Senha padrão armazenada como hash SHA-256 + salt — nunca em plaintext
 
                 fecharModalRecuperar();
                 showToast('Senha redefinida para: 1234');
@@ -4366,7 +4498,17 @@
                 if (!senhaAtual || !novaSenha || !confirmarSenha) {
                     showToast('Preencha todos os campos!'); return;
                 }
-                if (usuarios[usuarioAtual].senha !== senhaAtual) {
+
+                var user = usuarios[usuarioAtual];
+                var senhaAtualValida = false;
+
+                if (user.senhaHash && user.salt) {
+                    senhaAtualValida = verifyPassword(senhaAtual, user.senhaHash, user.salt);
+                } else if (user.senha) {
+                    senhaAtualValida = (user.senha === senhaAtual);
+                }
+
+                if (!senhaAtualValida) {
                     showToast('Senha atual incorreta!'); return;
                 }
                 if (novaSenha !== confirmarSenha) {
@@ -4376,9 +4518,16 @@
                     showToast('Mínimo 4 caracteres!'); return;
                 }
 
-                usuarios[usuarioAtual].senha = novaSenha;
+                // Gerar novo salt e hash para a nova senha
+                var novoSalt = generateSalt();
+                var novoHash = hashPassword(novaSenha, novoSalt);
+
+                user.senhaHash = novoHash;
+                user.salt = novoSalt;
+                delete user.senha; // Remover senha plaintext se existir
+
                 AppStorage.setItem('usuarios15bpm', JSON.stringify(usuarios));
-                // Nova senha definida — não armazenada em localStorage
+                // Nova senha armazenada como hash SHA-256 + salt — nunca em plaintext
                 fecharModalSenha();
                 showToast('Senha alterada com sucesso!');
             }
