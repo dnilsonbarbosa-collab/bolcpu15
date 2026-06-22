@@ -2333,7 +2333,7 @@
       
       // Toggle do tutorial accordion
       function copiarTextoSolicitacao() {
-        const texto = "Bom dia, Cmt!\n\nSe for possível enviar o PDF: \"OCORRÊNCIAS POR GRUPO DE DESPACHO E TIPO\" referente às últimas 24h de serviço na área do 15º BPM, eu fico muito grato!\n\n🫡🤝";
+        const texto = "Bom dia, Cmt!\n\nSe for possível enviar o PDF: *\"OCORRÊNCIAS POR GRUPO DE DESPACHO E TIPO\"* referente às últimas 24h de serviço na área do 15º BPM, eu fico muito grato!\n\n🫡🤝";
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(texto).then(function() {
                 showToast('Texto copiado! Cole no WhatsApp.');
