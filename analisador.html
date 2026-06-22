@@ -1953,6 +1953,40 @@
         color: var(--text);
         border: 1.5px solid var(--border);
       }
+
+      /* ============================================
+         BOTÃO COPIAR TEXTO DO TUTORIAL
+         ============================================ */
+      .btn-copy-texto {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 5px;
+        padding: 4px 7px;
+        background: #6b7280;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.49rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: inherit;
+      }
+      .btn-copy-texto:hover {
+        background: #4b5563;
+        transform: translateY(-1px);
+      }
+      .btn-copy-texto:active {
+        transform: scale(0.97);
+      }
+      .btn-copy-texto svg {
+        width: 9px;
+        height: 9px;
+        flex-shrink: 0;
+      }
 </style>
     <base target="_blank" />
   <base target="_blank">
@@ -2092,6 +2126,13 @@
               <div class="step-content">
                 <div class="step-title">Solicite o PDF ao CICC</div>
                 <div class="step-desc">Peça ao Oficial Regulador do CICC o Relatório de Ocorrências do 15º BPM no período do serviço</div>
+                <button class="btn-copy-texto" onclick="copiarTextoSolicitacao()" title="Copiar texto da mensagem">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  <span>copie aqui o texto da mensagem</span>
+                </button>
               </div>
             </div>
             <div class="tutorial-step">
@@ -2291,7 +2332,46 @@
 
       
       // Toggle do tutorial accordion
-      function toggleTutorial() {
+      function copiarTextoSolicitacao() {
+        const texto = "Bom dia, Cmt!\n\nSe for possível enviar o PDF: \"OCORRÊNCIAS POR GRUPO DE DESPACHO E TIPO\" referente às últimas 24h de serviço, eu fico muito grato!\n\n🫡🤝";
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(texto).then(function() {
+                showToast('Texto copiado! Cole no WhatsApp.');
+            }).catch(function() {
+                // Fallback
+                const ta = document.createElement('textarea');
+                ta.value = texto;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('Texto copiado! Cole no WhatsApp.');
+                } catch(e) {
+                    showToast('Erro ao copiar texto.');
+                }
+                document.body.removeChild(ta);
+            });
+        } else {
+            // Fallback para navegadores sem Clipboard API
+            const ta = document.createElement('textarea');
+            ta.value = texto;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showToast('Texto copiado! Cole no WhatsApp.');
+            } catch(e) {
+                showToast('Erro ao copiar texto.');
+            }
+            document.body.removeChild(ta);
+        }
+    }
+
+    function toggleTutorial() {
         const body = document.getElementById('tutorialBody');
         const chevron = document.getElementById('tutorialChevron');
         if (body && chevron) {
