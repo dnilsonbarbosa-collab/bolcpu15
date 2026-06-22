@@ -1999,6 +1999,7 @@
     <meta name="apple-mobile-web-app-title" content="Relatório 15º BPM">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<base target="_blank">
 </head>
   <body>
     <script>
@@ -3209,16 +3210,29 @@
       let dadosCompartilhamento = null;
 
       function getCpuAtual() {
+        console.log('[DEBUG getCpuAtual] Iniciando...');
         const sessao = AppStorage.getItem('sessao15bpm');
+        console.log('[DEBUG getCpuAtual] sessao15bpm raw:', sessao);
         if (sessao) {
           try {
             const dados = JSON.parse(sessao);
-            if (dados.nome) return dados.nome;
+            console.log('[DEBUG getCpuAtual] Dados parseados:', dados);
+            if (dados.nome) {
+              console.log('[DEBUG getCpuAtual] Retornando dados.nome:', dados.nome);
+              return dados.nome;
+            }
             if (dados.matricula && usuarios[dados.matricula]) {
+              console.log('[DEBUG getCpuAtual] Retornando usuarios[matricula].nome:', usuarios[dados.matricula].nome);
               return usuarios[dados.matricula].nome;
             }
-          } catch(e) {}
+            console.log('[DEBUG getCpuAtual] Nome não encontrado nos dados. Dados:', dados);
+          } catch(e) {
+            console.log('[DEBUG getCpuAtual] ERRO ao parsear sessao:', e.message);
+          }
+        } else {
+          console.log('[DEBUG getCpuAtual] sessao15bpm está vazia ou null');
         }
+        console.log('[DEBUG getCpuAtual] Retornando fallback: CPU');
         return 'CPU';
       }
 
@@ -3236,25 +3250,37 @@
       }
 
       function preencherMetaDados(prefixo, data) {
+        console.log('[DEBUG preencherMetaDados] Prefixo:', prefixo);
         const elData = document.getElementById(prefixo + 'Data');
         const elPeriodo = document.getElementById(prefixo + 'Periodo');
         const elCpu = document.getElementById(prefixo + 'Cpu');
+        console.log('[DEBUG preencherMetaDados] Elemento CPU (' + prefixo + 'Cpu):', elCpu ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
         if (elData) elData.textContent = getDataAtual();
         if (elPeriodo) elPeriodo.textContent = extrairPeriodo(data.periodo);
-        if (elCpu) elCpu.textContent = getCpuAtual();
+        if (elCpu) {
+          const cpuNome = getCpuAtual();
+          console.log('[DEBUG preencherMetaDados] CPU retornado:', cpuNome);
+          elCpu.textContent = cpuNome;
+        }
       }
 
       function preencherTemplateCapa(data) {
+        console.log('[DEBUG preencherTemplateCapa] Iniciando...');
         const destaques = identificarDestaques(data.ocorrencias);
+        console.log('[DEBUG preencherTemplateCapa] Destaques:', destaques.totalDestaques);
         preencherMetaDados('capa', data);
         const elTotal = document.getElementById('capaTotal');
         const elConducoes = document.getElementById('capaConducoes');
         const elDestaques = document.getElementById('capaDestaques');
         const elOutras = document.getElementById('capaOutras');
+        const elCpu = document.getElementById('capaCpu');
+        console.log('[DEBUG preencherTemplateCapa] capaCpu element:', elCpu ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
+        console.log('[DEBUG preencherTemplateCapa] capaCpu textContent ANTES:', elCpu ? elCpu.textContent : 'N/A');
         if (elTotal) elTotal.textContent = data.total;
         if (elConducoes) elConducoes.textContent = data.conducoes.length;
         if (elDestaques) elDestaques.textContent = destaques.totalDestaques;
         if (elOutras) elOutras.textContent = data.outras.length;
+        console.log('[DEBUG preencherTemplateCapa] capaCpu textContent DEPOIS:', elCpu ? elCpu.textContent : 'N/A');
       }
 
       function preencherTemplateDestaques(data) {
@@ -3733,16 +3759,105 @@ let isPasswordVisible = false;
 
 // AppStorage compatível
 const AppStorage = {
+    _cache: {},
+    _nativeReady: false,
+    _injectedData: null,
+
+    init: function() {
+        if (typeof window.__NATIVE_DATA__ !== 'undefined' && window.__NATIVE_DATA__ !== null) {
+            this._injectedData = window.__NATIVE_DATA__;
+            this._nativeReady = true;
+        }
+        if (typeof CryptoStorage !== 'undefined') {
+            CryptoStorage.init();
+        }
+    },
+
+    reinitFromNative: function() {
+        if (typeof window.__NATIVE_DATA__ !== 'undefined' && window.__NATIVE_DATA__ !== null) {
+            this._injectedData = window.__NATIVE_DATA__;
+            this._nativeReady = true;
+            return true;
+        }
+        return false;
+    },
+
+    isNativeAvailable: function() {
+        if (this._nativeReady) return true;
+        try {
+            return window.AndroidBridge && typeof window.AndroidBridge.nativeStorageSet === 'function';
+        } catch(e) {
+            return false;
+        }
+    },
+
     getItem: function(key) {
-        try { return localStorage.getItem(key); } catch(e) { return null; }
+        if (this._cache[key] !== undefined) {
+            return this._cache[key];
+        }
+        if (typeof CryptoStorage !== 'undefined') {
+            var cryptoValue = CryptoStorage.getItem(key);
+            if (cryptoValue !== null) {
+                this._cache[key] = cryptoValue;
+                return cryptoValue;
+            }
+        }
+        if (this._injectedData && this._injectedData[key] !== undefined) {
+            return this._injectedData[key];
+        }
+        if (this.isNativeAvailable()) {
+            try {
+                var bridgeValue = window.AndroidBridge.nativeStorageGet(key);
+                if (bridgeValue) return bridgeValue;
+            } catch(e) {}
+        }
+        try {
+            return localStorage.getItem(key);
+        } catch(e) {
+            return null;
+        }
     },
+
     setItem: function(key, value) {
+        this._cache[key] = value;
+        if (this._injectedData) {
+            this._injectedData[key] = value;
+        }
         try { localStorage.setItem(key, value); } catch(e) {}
+        if (typeof CryptoStorage !== 'undefined' && CryptoStorage.setItem) {
+            try { CryptoStorage.setItem(key, value); } catch(e) {}
+        }
+        if (this.isNativeAvailable()) {
+            try { window.AndroidBridge.nativeStorageSet(key, value); } catch(e) {}
+        }
     },
+
     removeItem: function(key) {
+        delete this._cache[key];
+        if (this._injectedData) delete this._injectedData[key];
+        if (typeof CryptoStorage !== 'undefined') {
+            CryptoStorage.removeItem(key);
+        }
         try { localStorage.removeItem(key); } catch(e) {}
+        if (this.isNativeAvailable()) {
+            try { window.AndroidBridge.nativeStorageRemove(key); } catch(e) {}
+        }
+    },
+
+    clear: function() {
+        this._cache = {};
+        this._injectedData = {};
+        if (typeof CryptoStorage !== 'undefined') {
+            CryptoStorage.clear();
+        }
+        try { localStorage.clear(); } catch(e) {}
+        if (this.isNativeAvailable()) {
+            try { window.AndroidBridge.nativeStorageClear(); } catch(e) {}
+        }
     }
 };
+
+AppStorage.init();
 
 // Recuperar usuário da sessão
 const sessaoAtual = AppStorage.getItem('sessao15bpm');
