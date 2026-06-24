@@ -2693,49 +2693,127 @@
       function mapearNaturezasPorSecao(text) {
         const mapa = {};
 
-        // Regex global para encontrar cabeçalhos de seção e PMs subsequentes
-        // Padrão: "Natureza (Total : X) ... PM########## ..."
-        const secaoRegex = /([A-Za-zÀ-ÿ\s/:–-]+?)\s*\(Total\s*:\s*\d+\)/g;
+        // ==========================================
+        // CORREÇÃO DEFINITIVA: Detectar início da natureza REAL
+        //
+        // O pdf.js extrai texto em ordem de stream (não visual).
+        // Quando há quebra de página ou coordenadas vazias, o texto
+        // da ocorrência anterior (cidade, status) fica colado ao
+        // cabeçalho da próxima natureza.
+        //
+        // Exemplos de texto capturado pelo regex:
+        //   "Esperança - Centro  Roubo - em Residência"
+        //   "delegacia Roubo - em Residência"
+        //   "Solucionada no local Furto - qualificado"
+        //
+        // SOLUÇÃO: A natureza REAL sempre começa com uma palavra conhecida.
+        // Procuramos no texto capturado pela primeira ocorrência de uma
+        // palavra que indica início de natureza e descartamos tudo antes.
+        // ==========================================
+
+        const secaoRegex = /([A-Za-zÀ-ÿ\s/:\-\–]+?)\s*\(Total\s*:\s*\d+\)/g;
         const pmRegex = /\bPM(\d{10})\b/g;
 
-        let secaoMatch;
-        let lastIndex = 0;
+        // Palavras que indicam o início de uma natureza de ocorrência
+        const naturezaStartWords = [
+          'Roubo', 'Furto', 'Homicídio', 'Latrocínio', 'Importunação', 'Estupro',
+          'Violência', 'Ameaça', 'Lesão', 'Embriaguez', 'Averiguação',
+          'Desaparecimento', 'Porte', 'Apoio', 'Recuperação', 'Ação',
+          'Perturbação', 'Poluição', 'Acidente', 'Vias', 'Tráfico',
+          'Extorsão', 'Sequestro', 'Receptação', 'Adulteração', 'Corrupção',
+          'Tortura', 'Incêndio', 'Explosão', 'Terrorismo', 'Associação',
+          'Quadrilha', 'Milícia', 'Drogas', 'Arma', 'Sexual'
+        ];
 
-        while ((secaoMatch = secaoRegex.exec(text)) !== null) {
-          const candidato = secaoMatch[1].trim();
+        // Coletar cabeçalhos
+        const headersList = [];
+        let hMatch;
+        while ((hMatch = secaoRegex.exec(text)) !== null) {
+          headersList.push(hMatch);
+        }
 
-          // Ignorar cabeçalhos de grupo
-          if (candidato.includes("PM AISP") || candidato.includes("BPM") || candidato.includes("DESPACHO")) {
+        // Coletar PMs
+        const pmsList = [];
+        let pMatch;
+        while ((pMatch = pmRegex.exec(text)) !== null) {
+          pmsList.push(pMatch);
+        }
+
+        console.log('[mapearNaturezasPorSecao] Cabeçalhos:', headersList.length, '| PMs:', pmsList.length);
+
+        for (let i = 0; i < headersList.length; i++) {
+          const h = headersList[i];
+          const textoCapturado = h[1].trim();
+
+          // ==========================================
+          // EXTRAIR NATUREZA REAL
+          // Procurar a primeira palavra de natureza no texto capturado
+          // ==========================================
+          let natureza = textoCapturado;
+          let startPos = textoCapturado.length;
+          let startWord = null;
+
+          for (let w = 0; w < naturezaStartWords.length; w++) {
+            const word = naturezaStartWords[w];
+            const pattern = new RegExp('\\b' + word + '\\b', 'i');
+            const match = pattern.exec(textoCapturado);
+            if (match) {
+              if (match.index < startPos) {
+                startPos = match.index;
+                startWord = word;
+              }
+            }
+          }
+
+          if (startPos < textoCapturado.length) {
+            natureza = textoCapturado.substring(startPos).trim();
+            natureza = natureza.replace(/^[\s\-\–\—]+/, '');
+            if (startPos > 0) {
+              console.log('[mapearNaturezasPorSecao] Lixo removido: "' + textoCapturado + '" → "' + natureza + '"');
+            }
+          }
+
+          // ==========================================
+          // VALIDAÇÃO DE SEGURANÇA
+          // ==========================================
+          if (!natureza || natureza.length < 3) {
+            console.warn('[mapearNaturezasPorSecao] REJEITADO: natureza vazia');
             continue;
           }
 
-          const naturezaAtual = candidato;
-          const posicaoSecao = secaoMatch.index;
+          const invalidKeywords = ['Código', 'Data início', 'Data término', 'Status de',
+                                   'fechamento', 'Localização', 'Cidade - Bairro',
+                                   'Latitude', 'Longitude'];
+          const isInvalid = invalidKeywords.some(function(kw) {
+            return natureza.toLowerCase().indexOf(kw.toLowerCase()) >= 0;
+          });
+          if (isInvalid) {
+            console.warn('[mapearNaturezasPorSecao] REJEITADO: contém palavra-chave de tabela');
+            continue;
+          }
 
-          // Encontrar todos os PMs após este cabeçalho até o próximo cabeçalho
-          const textoAposSecao = text.substring(posicaoSecao + secaoMatch[0].length);
+          // ==========================================
+          // ASSOCIAR PMs
+          // ==========================================
+          const pos = h.index + h[0].length;
+          const nextHeaderPos = (i + 1 < headersList.length) ? headersList[i+1].index : text.length;
 
-          // Procurar o próximo cabeçalho de seção
-          const proximoCabecalho = textoAposSecao.search(/[A-Za-zÀ-ÿ\s/:–-]+?\s*\(Total\s*:\s*\d+\)/);
-          const textoAteProximo = proximoCabecalho >= 0 
-            ? textoAposSecao.substring(0, proximoCabecalho) 
-            : textoAposSecao;
-
-          // Encontrar PMs neste intervalo
-          let pmMatch;
-          const pmRegexLocal = new RegExp(pmRegex.source, 'g');
-          while ((pmMatch = pmRegexLocal.exec(textoAteProximo)) !== null) {
-            const codigo = "PM" + pmMatch[1];
-            if (!mapa[codigo]) {
-              mapa[codigo] = naturezaAtual;
+          for (let j = 0; j < pmsList.length; j++) {
+            const pm = pmsList[j];
+            if (pm.index > pos && pm.index < nextHeaderPos) {
+              const codigo = 'PM' + pm[1];
+              if (!mapa[codigo]) {
+                mapa[codigo] = natureza;
+                console.log('[mapearNaturezasPorSecao]   → ' + codigo + ' = "' + natureza + '"');
+              }
             }
           }
         }
 
+        console.log('[mapearNaturezasPorSecao] PMs mapeados:', Object.keys(mapa).length);
         return mapa;
       }
-
-      function analyzeOccurrences(text) {
+function analyzeOccurrences(text) {
         const periodoMatch = text.match(
           /Per[i\u00ed]odo[:\s]*(\d{2}\/\d{2}\/\d{4})[^\n]*?(\d{2}\/\d{2}\/\d{4})/i,
         );
