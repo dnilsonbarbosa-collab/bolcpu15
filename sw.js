@@ -3,10 +3,14 @@
 // Cache-first strategy para assets estáticos
 // ==========================================
 
-const CACHE_NAME = 'relatorio-15bpm-v1';
+// VERSÃO DO CACHE - MUDAR A CADA ATUALIZAÇÃO IMPORTANTE
+// Isso força o service worker a criar um novo cache e descartar o antigo
+const CACHE_NAME = 'relatorio-15bpm-v2';
 const STATIC_ASSETS = [
   '/',
   'index.html',
+  'relatorio.html',
+  'analisador.html',
   'manifest.json',
   // Ícones
   'icons/icon-72x72.png',
@@ -28,7 +32,7 @@ const STATIC_ASSETS = [
 // INSTALAÇÃO - Pré-cache dos assets
 // ==========================================
 self.addEventListener('install', (event) => {
-  console.log('[SW] Instalando...');
+  console.log('[SW] Instalando versão v2...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -100,6 +104,8 @@ self.addEventListener('fetch', (event) => {
 function isStaticAsset(url) {
   const staticPaths = [
     'index.html',
+    'relatorio.html',
+    'analisador.html',
     'manifest.json',
     'icons/',
     'img/',
